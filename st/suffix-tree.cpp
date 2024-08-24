@@ -130,7 +130,13 @@ void SmallLoadTest()
 int main()
 {
 	SetConsoleOutputCP(CP_UTF8);
-
+	//
+	//
+	//
+	//
+	//
+	// Test rbtree
+	//
 	std::random_device rd;
 	std::mt19937 rng(rd());
 	std::uniform_int_distribution udist;
@@ -163,7 +169,14 @@ int main()
 
 	return 0;
 
-	std::fstream fin("C:/Users/LENOVO/Downloads/dataset/raw_data_set/formatted/anh_viet.txt");
+	//
+	//
+	//
+	//
+	//
+	// Test suffix tree
+	//
+	std::fstream fin("data/anh_viet.txt");
 
 	SuffixTreeRB sft;
 
