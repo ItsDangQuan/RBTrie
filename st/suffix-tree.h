@@ -50,7 +50,7 @@ class SuffixTree
   private:
 	// Define infinity constant, useful for canonization.
 	static const int oo = std::numeric_limits<int>::max();
-	static const char32_t delim = 0;
+	char32_t delim = std::numeric_limits<char32_t>::max();
 
 	//
 	// A node consists of a parent-node edge, all children and (maybe) a suffix link.
@@ -73,7 +73,7 @@ class SuffixTree
 	  public:
 		int EdgeLength(const int &pos) const
 		{
-			return std::min(end, pos + 1) - start;
+			return std::min(end, pos) - start;
 		}
 		bool IsLeaf() const
 		{
@@ -146,10 +146,10 @@ class SuffixTree
 
 	bool WalkDown(int node)
 	{
-		if (activeLength >= tree[node].EdgeLength(text.size() - 1))
+		if (activeLength >= tree[node].EdgeLength(text.size()))
 		{
-			activeEdge += tree[node].EdgeLength(text.size() - 1);
-			activeLength -= tree[node].EdgeLength(text.size() - 1);
+			activeEdge += tree[node].EdgeLength(text.size());
+			activeLength -= tree[node].EdgeLength(text.size());
 			activeNode = node;
 			return true;
 		}
@@ -250,7 +250,7 @@ class SuffixTree
 		{
 			Extend(c, satellite.size() - 1);
 		}
-		Extend(delim, satellite.size() - 1);
+		Extend(delim--, satellite.size() - 1);
 	}
 
 	void List() const
@@ -433,7 +433,7 @@ class SuffixTree
 		return true;
 	}
 
-	std::vector<KeyValue> Find(std::string key) const
+	std::vector<KeyValue> Find(std::string key)
 	{
 		if (key.empty() || !una::is_valid_utf8(key))
 		{
@@ -443,7 +443,7 @@ class SuffixTree
 		int curNode = 0, curLength = 0;
 		for (int i = 0; i < u32key.size(); ++i)
 		{
-			if (curLength == tree[curNode].EdgeLength(text.size() - 1))
+			if (curLength >= tree[curNode].EdgeLength(text.size()))
 			{
 				const auto &child = tree[curNode].next.find(u32key[i]);
 				if (child == tree[curNode].next.end())
@@ -463,20 +463,30 @@ class SuffixTree
 			}
 		}
 		std::vector<KeyValue> keyValue;
-		Collect(curNode, keyValue);
+		std::vector<int> collected;
+		Collect(curNode, keyValue, collected);
+		for (const auto &i : collected)
+		{
+			satellite[i].keyPos = -(satellite[i].keyPos + 1);
+		}
 		return keyValue;
 	}
 
-	void Collect(int curNode, std::vector<KeyValue> &keyValue) const
+	void Collect(int curNode, std::vector<KeyValue> &keyValue, std::vector<int> &collected)
 	{
 		if (tree[curNode].IsLeaf())
 		{
-			keyValue.emplace_back(satellite[-tree[curNode].link], text);
-			return;
+			int i = -tree[curNode].link;
+			if (satellite[i].keyPos >= 0)
+			{
+				keyValue.emplace_back(satellite[i], text);
+				satellite[i].keyPos = -satellite[i].keyPos - 1; // minus 1 to ensure marked value is negative
+				collected.push_back(i);
+			}
 		}
 		for (const auto &child : tree[curNode].next)
 		{
-			Collect(child.second, keyValue);
+			Collect(child.second, keyValue, collected);
 		}
 	}
 
@@ -492,5 +502,56 @@ class SuffixTree
 			u32strv.remove_prefix(1);
 		}
 		return true;
+	}
+
+	void fmm() const
+	{
+		std::ofstream fmmo("D:/sf1.txt");
+		for (int i = 0; i < tree.size(); ++i)
+		{
+			fmmo << i << " {\n"
+				 << "\tstart: " << tree[i].start << '\n'
+				 << "\tend: " << tree[i].end << '\n'
+				 << "\tedge: ";
+			if (i > 0)
+				for (int j = tree[i].start; j < std::min(tree[i].end, 10); ++j)
+				{
+					fmmo << static_cast<unsigned int>(text[j]) << ' ';
+				};
+			fmmo << '\n';
+			fmmo << "\tlink: " << tree[i].link << '\n' << "\tnext: {\n";
+			for (auto child = tree[i].next.begin(); child != tree[i].next.end(); ++child)
+			{
+				fmmo << "\t\t" << static_cast<unsigned int>(child->first) << ": " << child->second << '\n';
+			}
+			fmmo << "\t}\n}\n";
+		}
+	}
+
+	void fmm2(std::vector<int> &nodes) const
+	{
+		std::ofstream fmmo("D:/sf.txt");
+		for (const int &i : nodes)
+		{
+			fmmo << i << " {\n"
+				 << "\tstart: " << tree[i].start << '\n'
+				 << "\tend: " << tree[i].end << '\n'
+				 << "\tedge: ";
+			if (i > 0)
+				if (tree[i].IsLeaf())
+					fmmo << "leaf";
+				else
+					for (int j = tree[i].start; j < tree[i].end; ++j)
+					{
+						fmmo << una::utf32to8(std::u32string() + text[j]);
+					};
+			fmmo << '\n';
+			fmmo << "\tlink: " << tree[i].link << '\n' << "\tnext: {\n";
+			for (auto child = tree[i].next.begin(); child != tree[i].next.end(); ++child)
+			{
+				fmmo << "\t\t" << una::utf32to8(std::u32string() + child->first) << ": " << child->second << '\n';
+			}
+			fmmo << "\t}\n}\n";
+		}
 	}
 };

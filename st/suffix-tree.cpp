@@ -123,6 +123,8 @@ void SmallLoadTest()
 	std::cout << (st.Validate() ? "Valid suffix tree\n" : "Invalid suffix tree\n");
 }
 
+#include "suffix-arr.h"
+#include <chrono>
 #include <fstream>
 #include <random>
 #include <string>
@@ -130,91 +132,41 @@ void SmallLoadTest()
 int main()
 {
 	SetConsoleOutputCP(CP_UTF8);
-	//
-	//
-	//
-	//
-	//
-	// Test rbtree
-	//
-	std::random_device rd;
-	std::mt19937 rng(rd());
-	std::uniform_int_distribution udist;
 
-	RBTree<int, int> rb;
-	std::map<int, int> ctrl;
+	old::SuffixArray sa;
 
-	for (int i = 0; i < 10000; ++i)
-	{
-		int x = udist(rng);
-		int y = udist(rng);
-		rb[x] = y;
-		ctrl[x] = y;
-	}
-
-	auto rbi = rb.Begin();
-	for (auto ctrli = ctrl.begin(); ctrli != ctrl.end(); ctrli++)
-	{
-		if (*rbi.first != ctrli->first && *rbi.second != ctrli->second)
-		{
-			std::cerr << "wth";
-			throw;
-		}
-		else
-		{
-			std::cout << ctrli->first << ' ' << ctrli->second << '\n';
-		}
-		++rbi;
-	}
-
-	return 0;
-
-	//
-	//
-	//
-	//
-	//
-	// Test suffix tree
-	//
 	std::fstream fin("data/anh_viet.txt");
-
-	SuffixTreeRB sft;
-
-	// sft.Add("banana", "huh");
-	// return 0;
-
-	std::string line;
-	std::string word, definition, onlyDefinition;
+	std::string line, word, def;
 	while (std::getline(fin, line))
 	{
 		if (line[0] == '@')
 		{
 			if (!word.empty())
 			{
-				sft.Add(onlyDefinition, word);
+				sa.Add(def, word);
 			}
-			word.clear(), definition.clear(), onlyDefinition.clear();
-
 			line.erase(0, 1);
 			word = line;
-			continue;
+			def.clear();
 		}
-		definition += line + '\n';
-		if (line[0] == '-')
+		else if (line[0] == '-')
 		{
 			line.erase(0, 1);
-			while (line[0] == ' ')
-				line.erase(0, 1);
-			if (!onlyDefinition.empty())
-				onlyDefinition += "; ";
-			onlyDefinition += line;
+			def += line + '\n';
 		}
 	}
-	// if (!sft.Validate())
-	//	throw;
-	for (const auto &val : sft.Find((const char *)u8"nghiệm"))
+
+	auto start = std::chrono::steady_clock::now();
+	sa.Build();
+	auto end = std::chrono::steady_clock::now();
+	std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << '\n';
+
+	for (char c = 'a'; c <= 'z'; ++c)
 	{
-		std::cout << val.value << ":\n" << val.key << "\n\n";
+		start = std::chrono::steady_clock::now();
+		std::vector<std::string> collection = sa.Find(std::string() + c);
+		end = std::chrono::steady_clock::now();
+		std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << '\n';
 	}
 
 	return 0;

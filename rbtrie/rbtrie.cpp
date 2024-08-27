@@ -1,5 +1,4 @@
 ﻿#include "rbtrieRB.h"
-#include "red_black_tree.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>

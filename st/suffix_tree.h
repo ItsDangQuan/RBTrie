@@ -50,7 +50,7 @@ class SuffixTreeRB
   private:
 	// Define infinity constant, useful for canonization.
 	static const int oo = std::numeric_limits<int>::max();
-	static const char32_t delim = 36;
+	char32_t delim = std::numeric_limits<char32_t>::max();
 
 	//
 	// A node consists of a parent-node edge, all children and (maybe) a suffix link.
